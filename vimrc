@@ -8,12 +8,18 @@ Plug 'godlygeek/tabular'
 Plug 'hrp/EnhancedCommentify'
 Plug 'tpope/vim-surround'
 Plug 'Xuyuanp/nerdtree-git-plugin'
+Plug 'junegunn/gv.vim'
 Plug 'jiangmiao/auto-pairs'
+
 Plug 'tpope/vim-commentary'
 Plug 'tpope/vim-fugitive'
-Plug 'junegunn/gv.vim'
 Plug 'tpope/vim-speeddating'
 Plug 'tpope/vim-repeat'
+
+"Plug 'dense-analysis/ale'
+Plug 'rhysd/vim-clang-format'
+
+Plug 'ludovicchabant/vim-gutentags'
 " 插件到此结束
 call plug#end()
 
@@ -22,7 +28,7 @@ let g:indentLine_noConcealCursor = 1
 let g:indentLine_color_term = 239
 let g:indentLine_char = '┆'
 let g:indentLine_color_tty_light = 7 " (default: 4)
-let g:indentLine_color_dark = 1 " (default: 2)
+let g:indentLine_color_dark = 4 " (default: 2)
 let g:EnhCommentifyRespectIndent = 'Yes'
 let g:EnhCommentifyPretty = 'Yes'
 let g:indentLine_char_list = ['|', '¦', '┆', '┊']
@@ -43,6 +49,12 @@ let OmniCpp_ShowPrototypeInAbbr = 1
 autocmd FileType python,shell,coffee set commentstring=#\ %s
 "修改注释风格
 autocmd FileType java,c,cpp set commentstring=//\ %s
+
+"文件树
+nmap <C-n> :NERDTreeToggle<CR>
+
+"字符操作
+set noeb
 
 set et
 set ci
@@ -106,6 +118,9 @@ set background=dark
 set ignorecase                              "忽略大小写"
 syntax enable
 colorscheme gruvbox
+" 背景透明
+"highlight Normal guibg=NONE ctermbg=None
+
 au BufEnter * :syntax sync fromstart
 
 " 细节调整，主要为了适应 Google C++ Style
@@ -133,7 +148,7 @@ au FileType c,cpp set noexpandtab |set tabstop=8 |set shiftwidth=8
 " 不过，这年头谁还会写 Makefile？
 au FileType make set noexpandtab | set tabstop=8 | set shiftwidth=8
 
-" 限制长度74字符
+" 限制长度84字符
 au FileType c,cpp,python,vim set textwidth=84
 
 " 限长分割线
@@ -188,7 +203,6 @@ set incsearch
 "高亮所有结果
 set hlsearch
 
-"
 map <silent> <leader><CR> :nohlsearch<CR>
 set gdefault
 
@@ -223,6 +237,7 @@ func SetTitle()
     if expand("%:e") == 'c'
         call setline(1, "#include \"".expand("%:t:r").".h\"")
         call setline(2, "")
+        call setline(3, "// vim: ts=8 sw=8 noet autoindent:")
     endif
 
     if expand("%:e")=='h'
@@ -232,14 +247,29 @@ func SetTitle()
         call setline(4,"")
         call setline(5,"")
         call setline(6, "#endif /*__".toupper(expand("%:t:r"))."_H__ */")
-        call setline(7, "//vim: ts=8 sw=8 noet autoindent:")
+        call setline(7, "// vim: ts=8 sw=8 noet autoindent:")
     endif
-
+d
     if expand("%:e")== 'py'
         call setline(1, "#!/usr/bin/env python3")
         call setline(2, "# -*- coding: utf-8 -*-")
-        call setline(3,"")
+        call setline(3, "")
+        call setline(4, "# vim: ts=4 sw=4 noet autoindent:")
     endif
 
 endfunc
+
+" ctag 插件
+" gutentags 搜索工程目录的标志，碰到这些文件/目录名就停止向上一级目录递归
+let g:gutentags_project_root = ['.root', '.svn', '.git', '.hg', '.project']
+" 所生成的数据文件的名称
+let g:gutentags_ctags_tagfile = '.tags'
+" 将自动生成的 tags 文件全部放入 ~/.cache/tags 目录中，避免污染工程目录
+let s:vim_tags = expand('~/.cache/tags')
+let g:gutentags_cache_dir = s:vim_tags
+" 配置 ctags 的参数
+let g:gutentags_ctags_extra_args = ['--fields=+niazS', '--extra=+q']
+let g:gutentags_ctags_extra_args += ['--c++-kinds=+pxI']
+let g:gutentags_ctags_extra_args += ['--c-kinds=+px']
+
 
