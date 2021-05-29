@@ -7,8 +7,9 @@ Plug 'Yggdroot/indentLine'
 Plug 'godlygeek/tabular'
 Plug 'hrp/EnhancedCommentify'
 Plug 'tpope/vim-surround'
-Plug 'Xuyuanp/nerdtree-git-plugin'
+Plug 'preservim/nerdtree'
 Plug 'junegunn/gv.vim'
+Plug 'junegunn/vim-easy-align'
 Plug 'jiangmiao/auto-pairs'
 
 Plug 'tpope/vim-commentary'
@@ -18,8 +19,11 @@ Plug 'tpope/vim-repeat'
 
 "Plug 'dense-analysis/ale'
 Plug 'rhysd/vim-clang-format'
-
 Plug 'ludovicchabant/vim-gutentags'
+
+Plug 'majutsushi/tagbar'
+Plug 'dhruvasagar/vim-table-mode'
+
 " 插件到此结束
 call plug#end()
 
@@ -37,12 +41,12 @@ filetype indent on
 
 " C/C++ 自动补全插件
 set nocp
-filetype plugin on
-let OmniCpp_NamespaceSearch = 1
-let OmniCpp_GlobalScopeSearch = 1
-let OmniCpp_ShowAccess = 1
-let OmniCpp_MayCompleteDot = 1
-let OmniCpp_MayCompleteArrow = 1
+filetype plugin off
+let OmniCpp_NamespaceSearch     = 1
+let OmniCpp_GlobalScopeSearch   = 1
+let OmniCpp_ShowAccess          = 1
+let OmniCpp_MayCompleteDot      = 1
+let OmniCpp_MayCompleteArrow    = 1
 let OmniCpp_ShowPrototypeInAbbr = 1
 
 "为python和shell等添加注释
@@ -51,7 +55,9 @@ autocmd FileType python,shell,coffee set commentstring=#\ %s
 autocmd FileType java,c,cpp set commentstring=//\ %s
 
 "文件树
-nmap <C-n> :NERDTreeToggle<CR>
+nnoremap <C-n> :NERDTree<CR>
+nnoremap <C-t> :NERDTreeToggle<CR>
+nnoremap <C-f> :NERDTreeFind<CR>
 
 "字符操作
 set noeb
@@ -66,8 +72,8 @@ autocmd FileType make setlocal noexpandtab
 
 " 设置 mapleader，后面键盘映射随时要用
 " 基本上所有自定义的快捷键都以这个字符打头，比如映射`,w`为`:w`
-let mapleader = "`"
-let g:mapleader = "`"
+"let mapleader = "`"
+"let g:mapleader = "`"
 
 " 不兼容 Vi，最大限度使用新特性
 set nocompatible
@@ -118,10 +124,13 @@ set background=dark
 set ignorecase                              "忽略大小写"
 syntax enable
 colorscheme gruvbox
+"colorscheme github
 " 背景透明
 "highlight Normal guibg=NONE ctermbg=None
 
 au BufEnter * :syntax sync fromstart
+
+au BufRead,BufNewFile SConstruct,SConscript set filetype=python
 
 " 细节调整，主要为了适应 Google C++ Style
 " t0: 函数返回类型声明不缩进
@@ -147,6 +156,9 @@ au FileType c,cpp set noexpandtab |set tabstop=8 |set shiftwidth=8
 " Makefile 必须保留制表符，且习惯上占八个空格
 " 不过，这年头谁还会写 Makefile？
 au FileType make set noexpandtab | set tabstop=8 | set shiftwidth=8
+
+"Python 缩进4个空格
+au FileType python set expandtab | set tabstop=4 | set shiftwidth=4
 
 " 限制长度84字符
 au FileType c,cpp,python,vim set textwidth=84
@@ -234,10 +246,10 @@ autocmd BufNewFile *.py,*.[ch],*.hpp,*.cpp,Makefile,*.mk,*.sh exec ":call SetTit
 
 func SetTitle()
 
-    if expand("%:e") == 'c'
+    if expand("%:e")=='c'
         call setline(1, "#include \"".expand("%:t:r").".h\"")
         call setline(2, "")
-        call setline(3, "// vim: ts=8 sw=8 noet autoindent:")
+        "call setline(3, "// vim: ts=8 sw=8 noet autoindent:")
     endif
 
     if expand("%:e")=='h'
@@ -247,14 +259,13 @@ func SetTitle()
         call setline(4,"")
         call setline(5,"")
         call setline(6, "#endif /*__".toupper(expand("%:t:r"))."_H__ */")
-        call setline(7, "// vim: ts=8 sw=8 noet autoindent:")
+        "call setline(7, "// vim: ts=8 sw=8 noet autoindent:")
     endif
-d
+
     if expand("%:e")== 'py'
         call setline(1, "#!/usr/bin/env python3")
         call setline(2, "# -*- coding: utf-8 -*-")
         call setline(3, "")
-        call setline(4, "# vim: ts=4 sw=4 noet autoindent:")
     endif
 
 endfunc
@@ -273,3 +284,53 @@ let g:gutentags_ctags_extra_args += ['--c++-kinds=+pxI']
 let g:gutentags_ctags_extra_args += ['--c-kinds=+px']
 
 
+" vim-easy-align Configuration
+xmap al <Plug>(EasyAlign)
+nmap al <Plug>(EasyAlign)
+
+
+"make table
+function! s:isAtStartOfLine(mapping)
+  let text_before_cursor = getline('.')[0 : col('.')-1]
+  let mapping_pattern = '\V' . escape(a:mapping, '\')
+  let comment_pattern = '\V' . escape(substitute(&l:commentstring, '%s.*$', '', ''), '\')
+  return (text_before_cursor =~? '^' . ('\v(' . comment_pattern . '\v)?') . '\s*\v' . mapping_pattern . '\v$')
+endfunction
+
+inoreabbrev <expr> <bar><bar>
+          \ <SID>isAtStartOfLine('\|\|') ?
+          \ '<c-o>:TableModeEnable<cr><bar><space><bar><left><left>' : '<bar><bar>'
+inoreabbrev <expr> __
+          \ <SID>isAtStartOfLine('__') ?
+          \ '<c-o>:silent! TableModeDisable<cr>' : '__'
+
+let g:table_mode_corner='|'
+
+
+
+"auto Pairs config
+let g:AutoPairs = {'(':')', '[':']', '{':'}'}
+
+"当文本位于窗口底部时，自动移动到中间
+let g:AutoPairsCenterLine = 1
+
+
+"surround operate
+"   cs"'            # 替换 ==> "Hello world!" -> 'Hello world!'
+"   ds"             # 删除  ==> "Hello world!" -> Hello world!
+"   ysiw"           # 添加(ys=you surround) ==> Hello -> "Hello"
+"   csw"            # 添加  ==> Hello -> "Hello"
+"   yss"            # 添加-整行 ==> Hello world -> "Hello world"
+
+"生成注释块
+func SetComment()
+    call append(line(".")  , '/**')
+    call append(line(".")+1, ' * @brief ')
+    call append(line(".")+2, ' *')
+    call append(line(".")+3, ' * @param ')
+    call append(line(".")+4, ' *')
+    call append(line(".")+5, ' * @return none')
+    call append(line(".")+6, ' */')
+endfunc
+
+nnoremap <C-k> :call SetComment()<CR>j<CR>
